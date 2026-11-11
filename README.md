@@ -18,7 +18,8 @@ lanta/setup_env.sh           one-time: conda env + model download (run on the fr
 lanta/activate.sh            source it to get the env in your shell
 lanta/train_common.sh        torchrun command + hyper-parameters (sourced by the sbatch files)
 lanta/smoke_test.sbatch      50-step check, 1 h
-lanta/train_*.sbatch         the two real runs
+lanta/train_*.sbatch         the two real runs (full fine-tune)
+lanta/train_*_lora.sbatch    the same two runs with LoRA, merged at the end
 ```
 
 ## Steps
@@ -53,6 +54,21 @@ Monitor runs with `squeue -u $USER` and `tail -f logs/<name>-<jobid>.out`, or wi
 - `final_eval_predictions.csv` has greedy outputs on 500 gigaspeech-dev rows; the CER is printed at the end of the log.
 
 Push to the Hub from the frontend: `hf upload <user>/<repo> $CKPT_ROOT/<run>/final .`
+
+## LoRA instead of a full fine-tune
+
+```bash
+"$ENV_PREFIX/bin/python" -m pip install peft          # once, on the frontend (already in setup_env.sh for new envs)
+sbatch lanta/train_unfiltered_unrefined_lora.sbatch
+sbatch lanta/train_filtered_unrefined_lora.sbatch
+```
+
+What the LoRA runs do:
+- **Training setup:** LoRA with r=64 and α=128 on every attention and MLP projection of the LLM. The small audio-to-LLM projector is trained fully; the audio encoder and embeddings stay frozen. LR defaults to 2e-4.
+- **Outputs:** `final_adapter/` holds the adapter alone. `final/` holds the **merged** model, a plain `Qwen3ASRForConditionalGeneration` that loads and runs like the full fine-tune with no `peft` needed.
+- **Speed:** expect about 1.3–1.6× faster per step than a full fine-tune. The forward and backward passes still go through the whole model; what's saved is the weight gradients and optimizer updates for the frozen weights. The freed memory also lets you try `BS=32,ACCUM=1`.
+- **Options:** `--export=ALL,LORA_R=32` sets the rank. Pass `--lora_audio_tower` to add LoRA on the encoder.
+- **Smoke test:** `sbatch --export=ALL,LORA=1 lanta/smoke_test.sbatch`.
 
 ## Inspect the CSVs first
 

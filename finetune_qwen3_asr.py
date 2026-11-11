@@ -65,7 +65,13 @@ class DataArgs:
     eval_max_samples: int = field(default=2000, metadata={"help": "Random subset of the eval CSVs used during training (0 = all)."})
     final_cer_samples: int = field(default=500, metadata={"help": "Eval rows decoded with greedy generate after training (0 = skip)."})
     final_cer_batch_size: int = 16
-    freeze_audio_tower: bool = field(default=False, metadata={"help": "Train only the projector + LLM."})
+    freeze_audio_tower: bool = field(default=False, metadata={"help": "Full fine-tune: train only the projector + LLM."})
+    use_lora: bool = field(default=False, metadata={"help": "LoRA on the LLM (base frozen); merged into final/ at the end."})
+    lora_r: int = 64
+    lora_alpha: int = 128
+    lora_dropout: float = 0.05
+    lora_audio_tower: bool = field(default=False, metadata={"help": "Also put LoRA on the audio encoder."})
+    lora_train_projector: bool = field(default=True, metadata={"help": "Fully train the small audio->LLM projector alongside LoRA."})
     max_train_samples: int = field(default=0, metadata={"help": "Debug: cap on training rows (0 = all)."})
 
 
@@ -272,7 +278,19 @@ def main():
     model = Qwen3ASRForConditionalGeneration.from_pretrained(
         a.model_name_or_path, dtype=torch.float32 if targs.fp16 else dtype)   # fp16 AMP needs fp32 master weights
     model.config.use_cache = False
-    if a.freeze_audio_tower:
+    if a.use_lora:
+        from peft import LoraConfig, get_peft_model
+        targets = [r".*language_model\.layers\.\d+\.(self_attn\.(q|k|v|o)_proj|mlp\.(gate|up|down)_proj)"]
+        if a.lora_audio_tower:
+            targets.append(r".*audio_tower\.layers\.\d+\.(self_attn\.(q|k|v|out)_proj|fc1|fc2)")
+        model = get_peft_model(model, LoraConfig(
+            r=a.lora_r, lora_alpha=a.lora_alpha, lora_dropout=a.lora_dropout, bias="none",
+            target_modules="|".join(f"(?:{t})" for t in targets),
+            modules_to_save=["multi_modal_projector"] if a.lora_train_projector else None,
+        ))
+        if targs.gradient_checkpointing:
+            model.enable_input_require_grads()     # frozen embeddings -> make checkpointed blocks see a grad-requiring input
+    elif a.freeze_audio_tower:
         for n, p in model.named_parameters():
             if "audio_tower" in n:
                 p.requires_grad_(False)
@@ -292,12 +310,19 @@ def main():
     trainer.train(resume_from_checkpoint=last)
 
     final_dir = os.path.join(targs.output_dir, "final")
-    trainer.save_model(final_dir)
+    final_model = trainer.model
+    if a.use_lora:
+        trainer.save_model(os.path.join(targs.output_dir, "final_adapter"))   # adapter only (small), kept for reference
+        if trainer.is_world_process_zero():
+            final_model = trainer.model.merge_and_unload()                   # plain Qwen3ASRForConditionalGeneration
+            final_model.save_pretrained(final_dir)
+    else:
+        trainer.save_model(final_dir)
     if trainer.is_world_process_zero():
         processor.save_pretrained(final_dir)
-        print(f"Saved final model + processor -> {final_dir}")
+        print(f"Saved final {'merged LoRA ' if a.use_lora else ''}model + processor -> {final_dir}")
         if eval_ds is not None and a.final_cer_samples:
-            cer = final_cer(trainer.model, processor, eval_ds, a, targs.output_dir)
+            cer = final_cer(final_model, processor, eval_ds, a, targs.output_dir)
             trainer.log({"final_eval_cer": cer})
 
 

@@ -12,7 +12,15 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 NGPU=${SLURM_GPUS_ON_NODE:-4}
 EPOCHS=${EPOCHS:-1}
 MAX_STEPS=${MAX_STEPS:--1}                  # >0 overrides EPOCHS (use for a quick test)
-LR=${LR:-2e-5}
+LORA=${LORA:-0}                             # 1 = LoRA on the LLM (+ trained projector), merged into final/ at the end
+LORA_R=${LORA_R:-64}
+if [ "$LORA" = 1 ]; then
+  LR=${LR:-2e-4}                            # LoRA wants a ~10x higher LR than full fine-tuning
+  LORA_ARGS="--use_lora --lora_r $LORA_R --lora_alpha $((2 * LORA_R))"
+else
+  LR=${LR:-2e-5}
+  LORA_ARGS=""
+fi
 BS=${BS:-16}                                # per GPU
 ACCUM=${ACCUM:-2}                           # global batch = NGPU * BS * ACCUM = 128 by default
 WORKERS=${WORKERS:-12}                      # per GPU; LANTA GPU nodes have 64 cores
@@ -21,7 +29,7 @@ EVAL_STEPS=${EVAL_STEPS:-2000}
 OUT=${OUT:-$CKPT_ROOT/$RUN_NAME}
 mkdir -p "$OUT"
 
-echo "run=$RUN_NAME  gpus=$NGPU  out=$OUT"
+echo "run=$RUN_NAME  gpus=$NGPU  lora=$LORA  lr=$LR  out=$OUT"
 echo "train: $TRAIN_CSVS"
 echo "eval:  $EVAL_CSVS"
 nvidia-smi --query-gpu=name,memory.total --format=csv
@@ -46,4 +54,5 @@ torchrun --standalone --nproc_per_node "$NGPU" finetune_qwen3_asr.py \
   --save_strategy steps --save_steps "$SAVE_STEPS" --save_total_limit 3 \
   --ddp_find_unused_parameters False \
   --seed 42 \
+  $LORA_ARGS \
   "$@"

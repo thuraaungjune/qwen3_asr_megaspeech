@@ -21,10 +21,10 @@ fi
 "$PY" -m pip install --upgrade pip
 "$PY" -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu126
 # transformers 5.22.2 is the version the training script was tested with (Qwen3-ASR classes are in it).
-"$PY" -m pip install "transformers==5.22.2" accelerate soundfile librosa pandas numpy jiwer tensorboard "huggingface_hub[cli]"
+"$PY" -m pip install "transformers==5.22.2" accelerate peft soundfile librosa pandas numpy jiwer tensorboard "huggingface_hub[cli]"
 
 "$PY" - <<'EOF'
-import sys, torch, transformers, pandas, numpy
+import sys, torch, transformers, pandas, numpy, peft
 print("python", sys.executable)
 from transformers import Qwen3ASRForConditionalGeneration  # noqa: F401  (fails here if the version is too old)
 print("torch", torch.__version__, "| transformers", transformers.__version__)
