@@ -44,7 +44,7 @@ sbatch lanta/train_unfiltered_unrefined.sbatch
 sbatch lanta/train_filtered_unrefined.sbatch
 ```
 
-Monitor runs with `squeue -u $USER` and `tail -f logs/<name>-<jobid>.out`, or with TensorBoard: `tensorboard --logdir $CKPT_ROOT/<run>/tb`.
+Monitor runs with `squeue -u $USER` and `tail -f logs/<name>-<jobid>.out`, or with TensorBoard: `tensorboard --logdir $CKPT_ROOT/<run>`.
 
 **Walltime / resuming.** Each job asks for 120 h. If a run doesn't finish in time, submit the same sbatch again and it resumes from the newest `checkpoint-*` in the output folder (checkpoints every 2000 steps, newest 3 kept).
 

@@ -37,11 +37,11 @@ torchrun --standalone --nproc_per_node "$NGPU" finetune_qwen3_asr.py \
   --num_train_epochs "$EPOCHS" --max_steps "$MAX_STEPS" \
   --per_device_train_batch_size "$BS" --per_device_eval_batch_size "$BS" \
   --gradient_accumulation_steps "$ACCUM" \
-  --learning_rate "$LR" --lr_scheduler_type cosine --warmup_ratio 0.02 --weight_decay 0.01 \
+  --learning_rate "$LR" --lr_scheduler_type cosine --warmup_steps 0.02 --weight_decay 0.01 \
   --max_grad_norm 1.0 \
   --gradient_checkpointing --gradient_checkpointing_kwargs '{"use_reentrant": false}' \
   --dataloader_num_workers "$WORKERS" --dataloader_persistent_workers --dataloader_prefetch_factor 4 \
-  --logging_steps 50 --logging_dir "$OUT/tb" --report_to tensorboard \
+  --logging_steps 50 --report_to tensorboard \
   --eval_strategy steps --eval_steps "$EVAL_STEPS" \
   --save_strategy steps --save_steps "$SAVE_STEPS" --save_total_limit 3 \
   --ddp_find_unused_parameters False \
