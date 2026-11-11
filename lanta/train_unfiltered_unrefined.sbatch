@@ -14,7 +14,7 @@
 #   gigaspeech-train, scraped, yodas    <- unfiltered+unrefined
 #   ai-cooking, thai-central            <- filtered+unrefined (never filtered, only stored there)
 #   eval: gigaspeech-dev                <- filtered+unrefined
-# Submit from training/qwen3_asr_megaspeech:   sbatch lanta/train_unfiltered_unrefined.sbatch
+# Submit from the repo root:   sbatch lanta/train_unfiltered_unrefined.sbatch
 # Resubmitting the same script resumes from the newest checkpoint.
 
 source "$SLURM_SUBMIT_DIR/lanta/config.sh"

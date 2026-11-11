@@ -25,7 +25,7 @@ lanta/train_*.sbatch         the two real runs
 ```bash
 ssh <user>@lanta.nstda.or.th
 cd /project/lt200217-thwhis/$USER        # or wherever you keep the repo
-git clone <this repo>  &&  cd thonburian-whisper/training/qwen3_asr_megaspeech
+git clone https://github.com/thuraaungjune/qwen3_asr_megaspeech.git && cd qwen3_asr_megaspeech
 mkdir -p logs                            # sbatch writes logs/ here; the job fails if it is missing
 
 # 1. Environment + base model (frontend: compute nodes have no internet)

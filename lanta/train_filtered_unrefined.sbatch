@@ -13,7 +13,7 @@
 # Model 2: Filtered audios + Unrefined texts
 #   gigaspeech-train, scraped, yodas, ai-cooking, thai-central   <- filtered+unrefined
 #   eval: gigaspeech-dev                                          <- filtered+unrefined
-# Submit from training/qwen3_asr_megaspeech:   sbatch lanta/train_filtered_unrefined.sbatch
+# Submit from the repo root:   sbatch lanta/train_filtered_unrefined.sbatch
 # Resubmitting the same script resumes from the newest checkpoint.
 
 source "$SLURM_SUBMIT_DIR/lanta/config.sh"

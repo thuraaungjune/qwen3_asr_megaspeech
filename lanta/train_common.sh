@@ -2,7 +2,7 @@
 # Any variable below can be overridden at submit time, e.g.
 #   sbatch --export=ALL,LR=1e-5,EPOCHS=2 lanta/train_filtered_unrefined.sbatch
 set -euo pipefail
-cd "$SLURM_SUBMIT_DIR"                       # = training/qwen3_asr_megaspeech (submit from there)
+cd "$SLURM_SUBMIT_DIR"                       # = repo root (submit from there)
 source lanta/config.sh
 
 module load Mamba/23.11.0-0
