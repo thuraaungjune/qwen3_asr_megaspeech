@@ -15,6 +15,7 @@ finetune_qwen3_asr.py        training script (any HF TrainingArguments flag work
 inspect_csvs.py              checks the CSV columns, audio paths and durations
 lanta/config.sh              paths shared by every script (data, env, HF cache, checkpoints)
 lanta/setup_env.sh           one-time: conda env + model download (run on the frontend)
+lanta/activate.sh            source it to get the env in your shell
 lanta/train_common.sh        torchrun command + hyper-parameters (sourced by the sbatch files)
 lanta/smoke_test.sbatch      50-step check, 1 h
 lanta/train_*.sbatch         the two real runs
@@ -32,7 +33,7 @@ mkdir -p logs                            # sbatch writes logs/ here; the job fai
 bash lanta/setup_env.sh
 
 # 2. Check the CSVs: column names, whether the audio paths resolve, total hours
-module load Mamba/23.11.0-0 && source lanta/config.sh && conda activate $ENV_PREFIX
+source lanta/activate.sh                 # should print .../envs/qwen3asr/bin/python (Python 3.11)
 python inspect_csvs.py $FILTERED/*.csv $UNFILTERED/*.csv
 
 # 3. Smoke test (50 steps, 4 GPUs, ~15 min). Read logs/qasr06-smoke-<jobid>.out

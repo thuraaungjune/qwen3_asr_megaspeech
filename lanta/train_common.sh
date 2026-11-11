@@ -3,13 +3,7 @@
 #   sbatch --export=ALL,LR=1e-5,EPOCHS=2 lanta/train_filtered_unrefined.sbatch
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"                       # = repo root (submit from there)
-source lanta/config.sh
-
-module load Mamba/23.11.0-0
-set +u                                       # conda's activate scripts reference unset variables
-eval "$(conda shell.bash hook)"
-conda activate "$ENV_PREFIX"
-set -u
+source lanta/activate.sh                     # conda env + PYTHONNOUSERSITE=1
 
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1     # compute nodes have no internet
 export TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=4
