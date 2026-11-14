@@ -13,6 +13,7 @@ Full supervised fine-tuning of `Qwen/Qwen3-ASR-0.6B-hf` with the Hugging Face `T
 ```
 finetune_qwen3_asr.py        training script (any HF TrainingArguments flag works)
 inspect_csvs.py              checks the CSV columns, audio paths and durations
+push_to_hub.py               uploads a run to the HF Hub (public, manual gate, model card)
 lanta/config.sh              paths shared by every script (data, env, HF cache, checkpoints)
 lanta/setup_env.sh           one-time: conda env + model download (run on the frontend)
 lanta/activate.sh            source it to get the env in your shell
@@ -53,7 +54,13 @@ Monitor runs with `squeue -u $USER` and `tail -f logs/<name>-<jobid>.out`, or wi
 - `final/` holds the model and processor, loadable with `Qwen3ASRForConditionalGeneration.from_pretrained` (works with the ablation notebook too);
 - `final_eval_predictions.csv` has greedy outputs on 500 gigaspeech-dev rows; the CER is printed at the end of the log.
 
-Push to the Hub from the frontend: `hf upload <user>/<repo> $CKPT_ROOT/<run>/final .`
+Push to the Hub from the frontend: public, with access requests approved by hand, plus a model card:
+```bash
+export HF_TOKEN=hf_xxx            # write token (or `hf auth login` once)
+python push_to_hub.py --run_dir checkpoints/qwen3-asr-0.6b-megaspeech-unfiltered-unrefined \
+                      --repo_id ThuraAung1601/qwen3-asr-0.6b-megaspeech-unfiltered-unrefined
+# not finished yet? add --checkpoint latest
+```
 
 ## LoRA instead of a full fine-tune
 
